@@ -1,13 +1,12 @@
-def divide_pair_into_n(globListData, nAmount, fwdIdentifier, revIdentifier)
+def divide_pair_into_n(globListData, nAmount, fwdIdentifier)
   allData=Dir.glob(globListData)
   pair_ch=[]
   allData.each do |x|
     if x.match("_#{fwdIdentifier}")
-      prefix=x.match("_#{fwdIdentifier}").pre_match
-      suffix=x.match("_#{fwdIdentifier}").post_match
-      pair_ch.push("#{prefix}{#{fwdIdentifier},#{revIdentifier}}#{suffix}")
+      pair_ch.push(x.match("_#{fwdIdentifier}").pre_match.split("/")[-1])
     end
   end
+  pair_ch=pair_ch.shuffle
   equalarray=pair_ch.each_slice(nAmount).to_a.count
 
   chunkArray=pair_ch.each_slice(equalarray).to_a

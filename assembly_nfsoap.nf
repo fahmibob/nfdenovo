@@ -4,10 +4,13 @@ params.jobs="single"
 params.threads=5
 params.single=false
 params.pair=false
+params.filterbyGlob="$baseDir/output/pair_31"
+params.filterbyFile=false
+
 
 params.fasta=["fasta","fa","fas","fna"]
 
-params.kmer=35
+params.kmer=31
 params.avg_ins=200
 params.reverse_seq=0
 params.asm_flags=3
@@ -19,16 +22,31 @@ params.bbreformat="$baseDir/tools/bbmap/reformat.sh"
 
 workflow {
   if (params.single) {
-    channel.fromPath(params.single)
+    Channel.fromPath(params.single)
       .filter( ~/.*\d+.fq.gz/ )
       .map {file -> tuple(file.parent.getName(), file.simpleName, file)}
       .set{single_ch}
 
+
+
     single_assembly(single_ch)
   } else if (params.pair) {
-    channel.fromFilePairs(params.pair, flat: true)
-      .map {data -> tuple(data[1].parent.getName(), data[0], data[1], data[2] )}
+    Channel.fromFilePairs(params.pair, flat: true)
+      //.map {data -> tuple(data[1].parent.getName(), data[0], data[1], data[2] )}
       .set{pair_ch}
+
+    if (params.filterbyFile){
+      def filterList = new File(params.filterbyFile).collect {it}
+      pair_ch=pair_ch.map { if (it[0].toString() in filterList){it}}
+    }
+
+    if (params.filterbyGlob){
+      def filterFolder = new FileNameByRegexFinder().getFileNames(params.filterbyGlob, /.*\.fasta/)
+      filterFolder=filterFolder.collect {it.substring(it.lastIndexOf("/")+1, it.lastIndexOf("_"))}
+      pair_ch=pair_ch.map { if (!(it[0].toString() in filterFolder)){it}}
+    }
+
+    pair_ch=pair_ch.map {data -> tuple(data[1].parent.getName(), data[0], data[1], data[2] )}
 
     pair_assembly(pair_ch)
   }
